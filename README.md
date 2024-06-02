@@ -1,6 +1,6 @@
 # Insta Clone - Social Media Application for Sharing Moments with Friends
 
-![Instagram Clone](InstaPost.png)
+![Instagram Clone](https://github.com/rishirawat04/Insta-Clone-Social-media-application-for-sharing-moments-with-friends/blob/main/client/public/InstaProfile.png)
 
 ## Table of Contents
 
@@ -94,13 +94,13 @@ This is a fully functional Instagram clone built with the MERN stack. It allows 
 ## Screenshots
 
 ### Post Section
-![Post Section](instaPost.png)
+![Post Section](https://github.com/rishirawat04/Insta-Clone-Social-media-application-for-sharing-moments-with-friends/blob/main/client/public/instaPost.png)
 
 ### Profile Section
-![Profile Section](InstaProfile.png)
+![Profile Section](https://github.com/rishirawat04/Insta-Clone-Social-media-application-for-sharing-moments-with-friends/blob/main/client/public/InstaProfile.png)
 
 ### Comments and Likes Section
-![Comments and Likes Section](InstaComment.png)
+![Comments and Likes Section](https://github.com/rishirawat04/Insta-Clone-Social-media-application-for-sharing-moments-with-friends/blob/main/client/public/InstaComment.png)
 
 ## Contributing
 

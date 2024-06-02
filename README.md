@@ -1,6 +1,6 @@
 # Insta Clone - Social Media Application for Sharing Moments with Friends
 
-![Instagram Clone](InstaPost.jpg)
+![Instagram Clone](InstaPost.png)
 
 ## Table of Contents
 
@@ -94,13 +94,13 @@ This is a fully functional Instagram clone built with the MERN stack. It allows 
 ## Screenshots
 
 ### Post Section
-![Post Section](path_to_post_screenshot.png)
+![Post Section](instaPost.png)
 
 ### Profile Section
-![Profile Section](path_to_profile_screenshot.png)
+![Profile Section](InstaProfile.png)
 
 ### Comments and Likes Section
-![Comments and Likes Section](path_to_comments_likes_screenshot.png)
+![Comments and Likes Section](InstaComment.png)
 
 ## Contributing
 
@@ -112,4 +112,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contact
 
-Jay Baghel - [LinkedIn](https://www.linkedin.com/feed/) - jaybaghel@example.com
+Rishi Rawat - [LinkedIn](https://www.linkedin.com/in/rishi-rawat-a6632a251/)

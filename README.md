@@ -1,6 +1,6 @@
 # Insta Clone - Social Media Application for Sharing Moments with Friends
 
-![Instagram Clone](path_to_screenshot.png)
+![Instagram Clone](InstaPost.jpg)
 
 ## Table of Contents
 

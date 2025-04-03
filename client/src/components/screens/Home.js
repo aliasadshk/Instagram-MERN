@@ -5,209 +5,142 @@ import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const Home = () => {
-  const [comment, setComment] = useState("");
   const [data, setData] = useState([]);
-  const { state, dispatch } = useContext(userContext);
-
+  const [comment, setComment] = useState("");
+  const { state } = useContext(userContext);
 
   useEffect(() => {
     fetch("http://localhost:2048/allpost", {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("jwt"),
-      },
+      headers: { Authorization: "Bearer " + localStorage.getItem("jwt") },
     })
-      .then((response) => response.json())
-      .then((result) => {
-        setData(result.posts);
-      });
+      .then((res) => res.json())
+      .then((result) => setData(result.posts));
   }, []);
 
-  const likePost = (id) => {
-    fetch("http://localhost:2048/like", {
-      method: "put",
+  const updatePost = (url, postId, body = {}) => {
+    fetch(url, {
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + localStorage.getItem("jwt"),
       },
-      body: JSON.stringify({
-        postId: id,
-      }),
+      body: JSON.stringify({ postId, ...body }),
     })
       .then((res) => res.json())
-      .then((result) => {
-        const newData = data.map((item) => {
-          if (item._id === result._id) {
-            return result;
-          } else {
-            return item;
-          }
-        });
-        setData(newData);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-
-  const unlikePost = (id) => {
-    fetch("http://localhost:2048/unlike", {
-      method: "put",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("jwt"),
-      },
-      body: JSON.stringify({
-        postId: id,
-      }),
-    })
-      .then((res) => res.json())
-      .then((result) => {
-        const newData = data.map((item) => {
-          if (item._id === result._id) {
-            return result;
-          } else {
-            return item;
-          }
-        });
-        setData(newData);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-
-  const makeComment = (text, postId) => {
-    if (comment !== "") {
-      setComment('');
-      fetch("http://localhost:2048/comment", {
-        method: "put",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + localStorage.getItem("jwt"),
-        },
-        body: JSON.stringify({
-          postId,
-          text,
-        }),
-      })
-        .then((response) => response.json())
-        .then((result) => {
-          const newData = data.map((item) => {
-            if (item._id === result._id) {
-              return result;
-            } else {
-              return item;
-            }
-          });
-          setData(newData);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
+      .then((result) =>
+        setData((prev) =>
+          prev.map((item) => (item._id === result._id ? result : item))
+        )
+      )
+      .catch((err) => console.log(err));
   };
 
   const deletePost = (postId) => {
     fetch(`http://localhost:2048/deletepost/${postId}`, {
-      method: "delete",
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("jwt"),
-      },
+      method: "DELETE",
+      headers: { Authorization: "Bearer " + localStorage.getItem("jwt") },
     })
       .then((res) => res.json())
       .then((result) => {
-        const newData = data.filter((item) => {
-          return item._id !== result.deletedPostDetails._id;
-        });
-        toast.success(result.Message)
-        setData(newData);
+        setData((prev) =>
+          prev.filter((item) => item._id !== result.deletedPostDetails._id)
+        );
+        toast.success(result.Message);
       })
-      .catch((err) => {
-        console.log(err);
-        toast.error(err)
-      });
+      .catch((err) => toast.error(err));
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 w-[100%] mt-3  ">
+    <div className="flex flex-col items-center gap-6 w-full mt-3">
       {data.map((item) => (
-        <div className="flex flex-col w-[90%] sm:w-[500px] shadow-[0px_0px_8px_1px_rgba(0,0,0,0.3)] p-2 mt-2" key={item._id}>
-          <div className="p-2 flex justify-between ">
-
-            <Link className="flex items-center gap-2"
+        <div
+          key={item._id}
+          className="flex flex-col w-[90%] sm:w-[500px] bg-white shadow-lg rounded-lg border border-gray-300"
+        >
+          <div className="p-4 flex justify-between items-center border-b bg-gray-100">
+            <Link
               to={
                 item.postedBy._id === state._id
                   ? "/profile"
                   : `/profile/${item.postedBy._id}`
               }
+              className="flex items-center gap-3"
             >
-              <img src={item.postedBy.dp} alt="" style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover' }} />
+              <img
+                src={item.postedBy.dp}
+                alt="User DP"
+                className="w-[35px] h-[35px] rounded-full border border-gray-400"
+              />
               <h5 className="font-bold">{item.postedBy.name}</h5>
             </Link>
-            {state
-              ? item.postedBy._id === state._id && (
-                <MdDelete
-                  style={{
-                    color: "red",
-                    cursor: "pointer",
-                    fontSize: "2rem",
-                  }}
-                  title="Delete Post"
-                  onClick={() => deletePost(item._id)}
+            {state && item.postedBy._id === state._id && (
+              <MdDelete
+                className="text-red-600 cursor-pointer text-2xl"
+                onClick={() => deletePost(item._id)}
+              />
+            )}
+          </div>
+          <img
+            src={item.picture}
+            alt="Post"
+            className="w-full max-h-[550px] object-cover"
+          />
+          <div className="p-4 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              {state && item.likes.includes(state._id) ? (
+                <MdFavorite
+                  className="text-red-600 cursor-pointer text-2xl"
+                  onClick={() =>
+                    updatePost("http://localhost:2048/unlike", item._id)
+                  }
                 />
-              )
-              : "loading"}
-          </div>
-          <div className="w-[100%] h-[550px] ">
-            <img src={item.picture} alt="Post" className="w-full h-[100%] object-cover " />
-          </div>
-          <div className="p-4 flex flex-col gap-2">
-            {state
-              ? [
-                item.likes.includes(state._id) ? (
-                  <MdFavorite
-                    style={{
-                      color: "red",
-                      cursor: "pointer",
-                      fontSize: "2rem",
-                    }}
-                    onClick={() => unlikePost(item._id)}
-                  />
-                ) : (
-                  <MdFavoriteBorder
-                    style={{ cursor: "pointer", fontSize: "2rem" }}
-                    onClick={() => likePost(item._id)}
-                  />
-                ),
-              ]
-              : "loading"}
-
-            <h6 className="font-medium"><Link to={`/likeslist/${item._id}`}>{item.likes.length} likes </Link> </h6>
+              ) : (
+                <MdFavoriteBorder
+                  className="cursor-pointer text-2xl"
+                  onClick={() =>
+                    updatePost("http://localhost:2048/like", item._id)
+                  }
+                />
+              )}
+              <h6>
+                <Link to={`/likeslist/${item._id}`}>
+                  {item.likes.length} likes
+                </Link>
+              </h6>
+            </div>
             <h6 className="font-semibold">{item.title}</h6>
             <p>{item.body}</p>
-            {item.comments.map((record) => (
-              <h6 key={record.id} style={{ fontWeight: "400" }}>
-                <span style={{ fontWeight: "600" }}>
-                  {record.postedBy.name}
-                </span>{" "}
-                - {record.text}
-              </h6>
-            ))}
+            <div className="border-t pt-3">
+              {item.comments.map((record) => (
+                <h6 key={record._id}>
+                  <span className="font-semibold">{record.postedBy.name}</span>{" "}
+                  - {record.text}
+                </h6>
+              ))}
+            </div>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                makeComment(e.target[0].value, item._id);
+                updatePost("http://localhost:2048/comment", item._id, {
+                  text: comment,
+                });
+                setComment("");
               }}
             >
-              <div className="w-full flex justify-between items-center gap-2">
+              <div className="w-full flex items-center gap-2 border rounded-full p-2 bg-gray-100">
                 <input
                   type="text"
-                  placeholder="add a comment"
+                  placeholder="Add a comment..."
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  className="border-b-2 w-[100%] p-2 outline-none"
+                  className="flex-1 p-2 text-sm border-none outline-none bg-transparent"
                 />
-                <span onClick={() => { makeComment(comment, item._id) }} className="bg-neutral-200 cursor-pointer py-2 px-3 rounded-sm">Comment</span>
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white px-3 py-3 rounded-full"
+                >
+                  Add
+                </button>
               </div>
             </form>
           </div>

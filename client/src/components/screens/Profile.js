@@ -1,109 +1,150 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { userContext } from "../../App";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import { FaEllipsisV } from "react-icons/fa";
+
 const Profile = () => {
   const { state, dispatch } = useContext(userContext);
   const [mypics, setMyPics] = useState([]);
-  const [image, setImage] = useState("");
-  const inputDp = useRef(null)
+  const [showMenu, setShowMenu] = useState(null);
+  const [image, setImage] = useState(null);
+  const inputDp = useRef(null);
 
   useEffect(() => {
     fetch("http://localhost:2048/mypost", {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("jwt"),
-      },
+      headers: { Authorization: `Bearer ${localStorage.getItem("jwt")}` },
     })
-      .then((response) => response.json())
-      .then((result) => {
-        setMyPics(result.mypost);
-      });
+      .then((res) => res.json())
+      .then((data) => setMyPics(data.mypost));
   }, []);
 
   useEffect(() => {
-    if (image) {
-      toast.info("Uploading dp please wait a moment! this may take time depend on your internet")
-      
-      const data = new FormData();
-      data.append("file", image);
-      data.append("upload_preset", "Insta Clone");
-      data.append("cloud_name", "ascoder");
-      fetch("https://api.cloudinary.com/v1_1/ascoder/image/upload", {
-        method: "post",
-        body: data,
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          fetch("http://localhost:2048/updatedp", {
-            method: "put",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + localStorage.getItem("jwt"),
-            },
-            body: JSON.stringify({
-              dp: data.url,
-            }),
-          })
-            .then((res) => res.json())
-            .then((result) => {
-              if (result.err) {
-                toast.error(result.err)
-              }else{              
-                localStorage.setItem('user',JSON.stringify({...state, dp:data.url}))
-                dispatch({type:"UPDATEDP",payload:data.url})
-                toast.success('Your dp uploaded successully')
-                  inputDp.current.value =""
-              }
-            });
+    if (!image) return;
+
+    toast.info("Uploading profile picture...");
+    const data = new FormData();
+    data.append("file", image);
+    data.append("upload_preset", "Insta Clone");
+    data.append("cloud_name", "ascoder");
+
+    fetch("https://api.cloudinary.com/v1_1/ascoder/image/upload", {
+      method: "POST",
+      body: data,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        fetch("http://localhost:2048/updatedp", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+          },
+          body: JSON.stringify({ dp: data.url }),
         })
-        .catch((err) => {
-          console.log(err);
-          toast.error(err)
-        });
-    }
+          .then((res) => res.json())
+          .then((result) => {
+            if (result.err) {
+              toast.error(result.err);
+            } else {
+              const updatedUser = { ...state, dp: data.url };
+              localStorage.setItem("user", JSON.stringify(updatedUser));
+              dispatch({ type: "UPDATEDP", payload: data.url });
+              toast.success("Profile picture updated!");
+              setImage(null);
+              inputDp.current.value = "";
+            }
+          });
+      })
+      .catch(() => toast.error("Image upload failed."));
   }, [image]);
-  const updateDp = (file) => {
-    setImage(file);
+
+  const deletePost = (postId) => {
+    fetch(`http://localhost:2048/deletepost/${postId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${localStorage.getItem("jwt")}` },
+    })
+      .then((res) => res.json())
+      .then(() => {
+        toast.success("Post deleted!");
+        setMyPics(mypics.filter((item) => item._id !== postId));
+      })
+      .catch(() => toast.error("Failed to delete post"));
   };
+
   return (
     <div className="flex flex-col gap-6 px-4">
-      <div className="flex flex-col gap-2 border-b-2 md:w-[85%] w-full my-0 mx-auto py-4">
-        <div className="flex items-center sm:flex-row flex-col justify-center lg:gap-[100px] md:gap-10 gap-6 py-4">
-          <div className="dp">
-            <img src={state ? state.dp : "loading"} alt="dp" className="sm:w-[200px] sm:h-[200px] w-[150px] h-[150px] rounded-full object-cover" />
+      <div className="flex flex-col gap-4 border-b-2 md:w-[85%] w-full mx-auto py-6">
+        <div className="flex items-center sm:flex-row flex-col justify-center lg:gap-20 md:gap-10 gap-6">
+          <div className="relative">
+            <img
+              src={state?.dp || "loading"}
+              alt="profile"
+              className="sm:w-[200px] sm:h-[200px] w-[150px] h-[150px] rounded-full object-cover border-4 border-gray-300"
+            />
+            <input
+              type="file"
+              ref={inputDp}
+              className="hidden"
+              onChange={(e) => setImage(e.target.files[0])}
+            />
+            <button
+              onClick={() => inputDp.current.click()}
+              className="mt-3 bg-blue-500 text-white px-4 py-2 rounded-md"
+            >
+              Upload Profile Picture
+            </button>
           </div>
-          <div className="flex flex-col gap-2">
-            <h3 className="text-3xl sm:text-4xl font-semibold">{state ? state.name : "loading"}</h3>
-            <h5 className="text-2xl font-normal">
-              {state ? state.email : "loading"}
-            </h5>
-            <div className="flex gap-4 text-2xl font-normal text-center">
+          <div className="flex flex-col gap-3 text-center sm:text-left">
+            <h3 className="text-3xl sm:text-4xl font-semibold">
+              {state?.name || "loading"}
+            </h3>
+            <div className="flex gap-4 text-lg font-medium justify-center sm:justify-start">
               <h5>{mypics.length} Posts</h5>
-              <Link to={`/followerlist/${state._id}`}><h5>{state ? state.followers.length : "0"} Followers</h5></Link>
-              <h5>
-                <Link to={`/followinglist/${state._id}`}>
-                  {state ? state.following.length : "0"} Following
-                </Link>
-              </h5>
+              <Link to={`/followerlist/${state?._id}`}>
+                <h5>{state?.followers.length || 0} Followers</h5>
+              </Link>
+              <Link to={`/followinglist/${state?._id}`}>
+                <h5>{state?.following.length || 0} Following</h5>
+              </Link>
             </div>
           </div>
         </div>
-        <label className="flex w-full gap-2 items-center px-8">
-                    <span className="text-black font-medium">Update dp</span>
-                    <input type="file" className="file:border file:border-solid block text-sm text-slate-500
-      file:mr-4 file:py-2 file:px-4
-      file:rounded-full
-      file:text-sm file:font-semibold
-      file:bg-violet-50 file:text-violet-700
-      hover:file:bg-violet-100
-      cursor-pointer
-    " onChange={(e) => updateDp(e.target.files[0])} ref={inputDp}/>
-                </label>
       </div>
-      <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-3 place-items-center">
-        {mypics.map((item) => (
-          <img key={item._id} src={item.picture} alt={item.title} className="h-[22rem] w-[22rem] object-cover " />
-        ))}
+
+      <div className="grid lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-6 w-full max-w-5xl mx-auto px-4">
+        {mypics.length > 0 ? (
+          mypics.map((item) => (
+            <div key={item._id} className="relative">
+              <img
+                src={item.picture}
+                alt={item.title}
+                className="h-[350px] w-full object-cover rounded-lg border border-gray-300 shadow-md cursor-pointer"
+              />
+              <div className="absolute top-2 right-2">
+                <FaEllipsisV
+                  className="text-white text-2xl cursor-pointer"
+                  onClick={() =>
+                    setShowMenu(showMenu === item._id ? null : item._id)
+                  }
+                />
+                {showMenu === item._id && (
+                  <div className="absolute right-0 bg-white shadow-lg rounded-md p-2">
+                    <button
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+                      onClick={() => deletePost(item._id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-center text-gray-500 text-lg">No posts yet.</p>
+        )}
       </div>
     </div>
   );

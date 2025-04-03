@@ -1,101 +1,59 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { toast } from 'react-toastify'
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { BiSolidHide, BiSolidShow } from "react-icons/bi";
+
 const Signup = () => {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const navigate = useNavigate();
-    const [image, setImage] = useState("");
-    const [url, setUrl] = useState(undefined);
-    const [showPassword,setShowPassword] = useState(false);
+  const [name, setName] = useState(''), [email, setEmail] = useState(''), [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        if (url) {
-            signupData();
-        }
-    }, [url])
-    const uploadDp = () => {
-        const data = new FormData();
-        data.append("file", image);
-        data.append("upload_preset", "Insta Clone");
-        data.append("cloud_name", "ascoder");
-        fetch("https://api.cloudinary.com/v1_1/ascoder/image/upload", {
-            method: "post",
-            body: data,
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                setUrl(data.url);
-            })
-            .catch((err) => {
-                toast.error(err);
-            });
+  const handleSignup = async () => {
+    if (!email.includes("@") || !email.includes(".")) return toast.error("Invalid email");
+
+    try {
+      const res = await fetch("http://localhost:2048/signup", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, dp: undefined }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.err || "Signup failed");
+
+      toast.success(data.msg);
+      navigate("/signin");
+    } catch (err) {
+      toast.error(err.message);
     }
-    const signupData = () => {
-        if (!/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(email)) {
-            toast.error("Invalid email")
-            return
-        }
-        fetch('http://localhost:2048/signup', {
-            method: 'post',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name,
-                email,
-                password,
-                dp: url,
-            })
-        }).then(res => res.json())
-            .then(data => {
-                if (data.err) {
-                    toast.error(data.err)
-                } else {
-                    toast.success(data.msg)
-                    navigate('/signin');
+  };
 
-                }
-            }).catch(err => console.log(err))
-    }
-    const postData = () => {
-        if (image) {
-            uploadDp();
-        } else {
-            signupData();
-        }
+  return (
+    <div className="flex justify-center items-center h-screen bg-gray-100">
+      <div className="flex flex-col items-center gap-4 bg-white shadow-lg p-8 w-80 rounded-2xl">
+        <h2 className="text-4xl font-medium">Instagram</h2>
 
-    }
-    return (
-        <div className='w-full h-[100vh] flex justify-center items-center'>
-            <div className="flex flex-col items-center gap-4 w-[80%] sm:w-[400px] ">
-                <h2 className='text-4xl font-medium'>Instagram</h2>
-                <input className='border-2 border-gray-300 py-2 px-4 outline-none w-full focus:border-blue-500 rounded-md' type="text" placeholder='Name' value={name} onChange={(e) => setName(e.target.value)} />
+        <input type="text" placeholder="Full Name" value={name} onChange={e => setName(e.target.value)}
+          className="border py-2 px-4 w-full rounded-md focus:border-blue-500" />
 
-                <input className='border-2 border-gray-300 py-2 px-4 outline-none w-full focus:border-blue-500 rounded-md' type="text" placeholder='Email' value={email} onChange={(e) => setEmail(e.target.value)} />
-                <div className='relative w-full'>
-                    <input className='border-2 border-gray-300 py-2 pr-12 px-4 outline-none w-full focus:border-blue-500 rounded-md' type={showPassword ? `text` : 'password'} placeholder='Password' value={password} onChange={(e) => setPassword(e.target.value)} />
+        <input type="text" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
+          className="border py-2 px-4 w-full rounded-md focus:border-blue-500" />
 
-                    {showPassword ? <BiSolidHide className="absolute right-5 top-1/2 -translate-y-1/2 text-2xl cursor-pointer opacity-60 " title='Hide Password' onClick={() => setShowPassword(prev => !prev)} /> : <BiSolidShow className="absolute right-5 top-1/2 -translate-y-1/2 text-2xl cursor-pointer opacity-60 " title='Show Password' onClick={() => setShowPassword(prev => !prev)} />}
-                </div>
-                <label className="flex w-full gap-2 items-center px-1">
-                    <span className="text-black font-medium">Upload Dp</span>
-                    <input type="file" className="file:border file:border-solid block text-sm text-slate-500
-      file:mr-4 file:py-2 file:px-4
-      file:rounded-full
-      file:text-sm file:font-semibold
-      file:bg-violet-50 file:text-violet-700
-      hover:file:bg-violet-100
-    " onChange={(e) => setImage(e.target.files[0])} />
-                </label>
-                <button className='w-full bg-blue-400 py-2 text-md font-medium rounded-sm hover:bg-blue-500 duration-300 tracking-wide' onClick={() => postData()}>Signup</button>
-
-                <h5>Already have an account? <Link to={'/signin'} className='text-blue-500 hover:underline'>Sign In</Link></h5>
-            </div>
+        <div className="relative w-full">
+          <input type={showPassword ? "text" : "password"} placeholder="Password" value={password}
+            onChange={e => setPassword(e.target.value)} className="border py-2 pr-10 px-4 w-full rounded-md focus:border-blue-500" />
+          {showPassword ? <BiSolidHide onClick={() => setShowPassword(false)}
+            className="absolute right-3 top-3 cursor-pointer text-xl opacity-60" />
+            : <BiSolidShow onClick={() => setShowPassword(true)}
+            className="absolute right-3 top-3 cursor-pointer text-xl opacity-60" />}
         </div>
-    )
-}
 
-export default Signup
+        <button onClick={handleSignup}
+          className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 duration-300">Sign up</button>
+
+        <h5 className="text-sm">Already have an account? <Link to="/signin" className="text-blue-500">Sign in</Link></h5>
+      </div>
+    </div>
+  );
+};
+
+export default Signup;

@@ -1,144 +1,105 @@
 import React, { useEffect, useState, useContext } from "react";
 import { userContext } from "../../App";
-import { Link, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
-const Userprofile = () => {
-  const { state, dispatch } = useContext(userContext);
-  const [userprofile, setUserprofile] = useState(null);
-  const [showfollow,setShowfollow] = useState(null)
-  const { userid } = useParams();
-  useEffect(() => {
-    fetch(`http://localhost:2048/user/${userid}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("jwt"),
-      },
-    })
-      .then((response) => response.json())
-      .then((result) => {
-        setUserprofile(result)
-      })
-      .catch((error) => {
-        console.error("Error fetching user profile:", error);
-       toast.error('Error fetching user profile')
-      });
+import { Link, useParams, useNavigate } from "react-router-dom";
 
-      //changing the follow and unfollow button according to following list of the current user
-      const USER_DETAIL = JSON.parse(localStorage.getItem('user'))
-      if(USER_DETAIL.following.includes(userid)){
-        setShowfollow(false)
-      }else{
-        setShowfollow(true);
+const UserProfile = () => {
+  const { state, dispatch } = useContext(userContext);
+  const [userProfile, setUserProfile] = useState(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const { userid } = useParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`http://localhost:2048/user/${userid}`, {
+          headers: { Authorization: "Bearer " + localStorage.getItem("jwt") },
+        });
+        const data = await res.json();
+        setUserProfile(data);
+
+        // Check if logged-in user follows this profile
+        const currentUser = JSON.parse(localStorage.getItem("user"));
+        setIsFollowing(currentUser.following.includes(userid));
+      } catch (err) {
+        console.error("Error fetching profile:", err);
       }
+    };
+
+    fetchProfile();
   }, [userid]);
 
-  const followUser = () => {
-    fetch("http://localhost:2048/follow", {
-      method: "put",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("jwt"),
-      },
-      body: JSON.stringify({
-        followId: userid,
-      }),
-    })
-      .then((res) => res.json())
-      .then(async (data) => {
-        await dispatch({type:"UPDATE",payload:{following:data.currentUser.following,followers:data.currentUser.followers}})
-        localStorage.setItem('user',JSON.stringify(data.currentUser));
-        setUserprofile((prevState)=>{
-          return{
-            ...prevState,
-            user:{
-              ...prevState.user,
-              followers:[...prevState.user.followers,data.followedUser._id]
-            }
-          }
-        })
-        setShowfollow(false)
+  const handleFollow = async () => {
+    try {
+      const res = await fetch(`http://localhost:2048/${isFollowing ? "unfollow" : "follow"}`, {
+        method: "PUT",
+        headers: {        
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + localStorage.getItem("jwt"),
+        },
+        body: JSON.stringify({ followId: userid }),
       });
-  };
-  const unfollowUser = () => {
-    fetch("http://localhost:2048/unfollow", {
-      method: "put",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + localStorage.getItem("jwt"),
-      },
-      body: JSON.stringify({
-        unfollowId: userid,
-      }),
-    })
-      .then((res) => res.json())
-      .then(async (data) => {
-        await dispatch({type:"UPDATE",payload:{following:data.currentUser.following,followers:data.currentUser.followers}})
-        localStorage.setItem('user',JSON.stringify(data.currentUser));
 
-        setUserprofile((prevState)=>{
-          const newFollowers = prevState.user.followers.filter(item => item != data.followedUser._id)
-          return{
-            ...prevState,
-            user:{
-              ...prevState.user,
-              followers:newFollowers,
-            }
-          }
-        })
-        setShowfollow(true)
-      });
+      const data = await res.json();
+      dispatch({ type: "UPDATE", payload: data.currentUser });
+      localStorage.setItem("user", JSON.stringify(data.currentUser));
+      setIsFollowing(!isFollowing);
+    } catch (err) {
+      console.error("Error updating follow status:", err);
+    }
   };
+
+  if (!userProfile) return <h2 className="text-center mt-10">Loading...</h2>;
+
   return (
-    <>
-      {userprofile ? (
-        <div className="flex flex-col gap-4 border-b-2 md:w-[85%] w-full my-0 mx-auto py-4">
-          <div className="flex items-center sm:flex-row flex-col justify-center lg:gap-[100px] md:gap-10 gap-6 py-4 border-b-4 border-gray-200">
-            <div className="dp">
-              <img src={userprofile ? userprofile.user.dp : "loading"} alt="dp" className="sm:w-[200px] sm:h-[200px] w-[150px] h-[150px] rounded-full object-cover" />
-            </div>
-            <div className="flex flex-col gap-2">
-              {userprofile && (
-                <>
-                  <h3 className="text-3xl sm:text-4xl font-semibold">{userprofile ? userprofile.user.name : "loading"}</h3>
-                  <h6 className="text-2xl font-normal">{userprofile.user.email}</h6>
-                </>
-              )}
-              <div className="flex gap-4 text-2xl font-normal text-center">
-                {userprofile && (
-                  <>
-                    <h5>{userprofile.posts.length} posts</h5>
-                    <h5><Link to={`/followerlist/${userprofile.user._id}`} user={userprofile.user._id}>{userprofile ? userprofile.user.followers.length : "0"} followers</Link></h5>
-                    <h5><Link to={`/followinglist/${userprofile.user._id}`} user={userprofile.user._id}>{userprofile ? userprofile.user.following.length : "0"} Following</Link></h5>
-                  </>
-                )}
-              </div>
-              {userprofile && showfollow ? <button
-              style={{marginTop:"0.5rem"}}
-                className="py-2 bg-blue-500 text-yellow-50 font-semibold rounded-sm"
-                onClick={() => followUser()}
-              >
-                Follow
-              </button> : <button
-              style={{marginTop:"0.5rem",color:'green'}}
-                className="py-2 bg-[#eee] font-semibold rounded-sm"
-                onClick={() => unfollowUser()}
-              >
-                Following
-              </button>}
-            </div>
+    <div className="flex flex-col gap-6 px-4">
+      <div className="flex flex-col gap-4 border-b-2 md:w-[85%] w-full mx-auto py-6">
+        <div className="flex items-center sm:flex-row flex-col justify-center lg:gap-20 md:gap-10 gap-6">
+          <div className="relative">
+            <img
+              src={userProfile?.user?.dp || "https://via.placeholder.com/150"}
+              alt="profile"
+              className="sm:w-[200px] sm:h-[200px] w-[150px] h-[150px] rounded-full object-cover border-4 border-gray-300"
+            />
           </div>
-          <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-3 place-items-center">
-            {userprofile && (
-              userprofile.posts.map(item =>(
-                <img src={item.picture} alt={item.title} key={item._id} className="h-[22rem] w-[22rem] object-cover " />
-              ))
+          <div className="flex flex-col gap-3 text-center sm:text-left">
+            <h3 className="text-3xl sm:text-4xl font-semibold">
+              {userProfile?.user?.name}
+            </h3>
+            <div className="flex gap-4 text-lg font-medium justify-center sm:justify-start">
+              <h5>{userProfile?.posts?.length} Posts</h5>
+              <Link to={`/followerlist/${userid}`}>
+                <h5>{userProfile?.user?.followers?.length} Followers</h5>
+              </Link>
+              <Link to={`/followinglist/${userid}`}>
+                <h5>{userProfile?.user?.following?.length} Following</h5>
+              </Link>
+            </div>
+
+            {/* Show Follow/Unfollow button only for other users */}
+            {state._id !== userid && (
+              <>
+                <button
+                  onClick={handleFollow}
+                  className={`mt-3 px-4 py-2 rounded ${
+                    isFollowing ? "bg-green-300 text-black" : "bg-blue-500 text-white"
+                  }`}
+                >
+                  {isFollowing ? "Following" : "Follow"}
+                </button>
+                <button
+                  onClick={() => navigate(`/message/${userid}`)}
+                  className="mt-3 px-4 py-2 rounded bg-gray-500 text-white"
+                >
+                  Message
+                </button>
+              </>
             )}
           </div>
         </div>
-      ) : (
-        <h2>Loading...!!!</h2>
-      )}
-    </>
+      </div>
+    </div>
   );
 };
 
-export default Userprofile;
+export default UserProfile;
